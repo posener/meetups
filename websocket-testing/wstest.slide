@@ -1,0 +1,191 @@
+Websocket Testing in Go
+
+Eyal Posener
+Stratoscale
+posener@gmail.com
+
+* Agenda
+
+- Go and testing
+- Go and HTTP
+- Go and HTTP and testing
+- Go and Websockets
+- Go and Websockets and testing
+- What is missing
+- Solution
+- The `net.Pipe` challenge
+
+* Everybody loves testing
+
+From the survey:
+
+.image img/survey.png
+
+* Go + tests = <3
+
+- Seriously, go was built so you could test your code easily
+- ... Super easily
+- `testing` package in the standard tool
+- `go test` tool as part of the `go` command line
+- Benchmarks
+- Run tests in parallel
+- Coverage as a standard tool
+- + a lot more...
+
+* Go + HTTP Server = Big <3
+
+HTTP Handler interface (sinners are frameworks who wrap it)
+
+    type Handler interface {
+        ServeHTTP(ResponseWriter, *Request)
+    }
+
+You get a strong and concurrent web server out of the box!
+
+Example:
+
+.play handler/handler.go /^func main/,/^}/
+
+[[http://localhost:8080/go]]
+[[http://localhost:8080/Stratoscale]]
+
+* Go + Testing + HTTP Servers > 3
+
+`httptest.NewServer` option:
+
+.play newserver/main.go /^func main/,/^}/
+
+`httptest.NewRecorder` option:
+
+.play recorder/main.go /^func main/,/^}/
+
+Unless you have a very good reason, prefer the second.
+
+* Websockets:
+
+- Give full duplex communication. (Instead of polling / long polling)
+- Low messages overhead
+- Use existing http/s ports: good for strict firewalled environments.
+- Ride over existing http/s protocol.
+
+* Websockets Basics:
+
+HTTP handshake:
+
+- Request:
+
+    GET /ws HTTP/1.1
+    Upgrade: websocket
+    Connection: Upgrade
+    ...
+
+- Response:
+
+    HTTP/1.1 101 Switching Protocols
+    Upgrade: websocket
+    Connection: Upgrade
+    ...
+
+--> TCP based Full duplex communication
+
+* Websockets in Go
+
+.image img/package-websocket.png
+
+* Example: echo server
+
+.code echo/handler.go /^func Handler/,/^}/
+
+* Test it?
+
+- Use the httptest.NewServer!
+
+.play websocket-newserver/main.go /^func main/,/^}/
+
+* Test it?
+
+- Use `httptest.Recorder`?
+
+    Not possible!
+
+- Why do we want something like `httptest.Recorder`?
+
+* What can we do?
+
+We want to achieve something of the form:
+
+    d := NewTestDialer(http.HandlerFunc(echo.Handler))
+    c, resp, err := d.Dial("ws://whatever/ws", nil)
+
+- Use the webscoket.Dialer.NetDial field:
+
+    NetDial: func(network, addr string) (net.Conn, error)
+
+- Use net.Pipe that returns two paired connections
+
+    client, server := net.Pipe()
+
+.link https://golang.org/pkg/net/#Conn net.Conn interface
+.link https://golang.org/src/net/pipe.go?s=461:485#L8 net.Pipe implementation
+
+* Let's build it together!
+
+.code build/main.go /^func NewTestDialer/,/^}/
+
+* recorder: implements ResponseWriter + Hijacker
+
+.code build/main.go /RECORDER START OMIT/,/RECORDER END OMIT/
+
+* Works?
+
+.play build/main.go /^func main/,/^}/
+
+* panic: set pipe: deadline not supported
+
+Actually: net.Pipe fails the `nettest.TestConn` tests.
+.link https://github.com/golang/net/blob/master/nettest/conntest.go#L37 TestConn tests net pipes implementations
+
+.code nettest/netpipe_test.go /^func TestNetPipe/,/^}/
+
+==> Fails
+
+Let's write a net.Pipe that supports deadlines!
+
+.link https://go-review.googlesource.com/c/37402/ (Actually someone already PR this)
+
+* The challenges
+
+- Read/Write methods blocks, how do you cancel them?
+
+My solution:
+
+- bytes.Buffer which is not blocking, returns EOF error on read when empty
+- sync.Cond for notifying on new content in pipe
+
+  on setDeadline ->
+    cancel running goroutine if exists
+    if 0 set error to nil
+    if in the past/present: set error and broadcast
+    if in future: run a goroutie that will set the error and broadcast in the requested deadline
+  on read + EOF -> wait on cond
+  on write -> Signal
+
+.link https://github.com/posener/wstest#examples Voilà
+
+* Thanks
+
+- The slides are available on [[https://github.com/posener/meetups]]
+- wstest package is available on [[https://github.com/posener/wstest]]
+
+.image img/pizza-and-beer.png 320 320
+
+- Bash completion for the go command:
+
+    go get -u github.com/posener/complete/gocomplete && gocomplete -install
+
+
+* References
+
+.link https://github.com/gorilla/websocket/blob/master/server.go#L106-L229 Gorilla server Upgrade() function
+.link https://github.com/gorilla/websocket/blob/master/client.go#L167-L392 Gorilla client Dial function
+
