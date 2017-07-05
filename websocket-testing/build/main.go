@@ -2,11 +2,10 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
-
-	"fmt"
 
 	"github.com/gorilla/websocket"
 	"github.com/posener/wstest-meetup/echo"
@@ -46,7 +45,7 @@ func (r *recorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // WriteHeader is part of the ResponseWriter interface
 func (r *recorder) WriteHeader(code int) {
-	resp := http.Response{StatusCode: code}
+	resp := http.Response{StatusCode: code, Header: r.Header()}
 	resp.Write(r.conn)
 }
 

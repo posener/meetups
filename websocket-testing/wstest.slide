@@ -4,6 +4,22 @@ Eyal Posener
 Stratoscale
 posener@gmail.com
 
+* Community Survey
+
+.image img/go-knowledge.png
+
+1: Heard about it
+5: Expert
+
+* Community Survey
+
+.image img/go-romance.png
+
+- Go is one of the languages I use at work
+- I program in Go in my spare time
+- I love Go
+- Worked with it for a while / Love/hate relationship / Willing to use
+
 * Agenda
 
 - Go and testing
@@ -25,7 +41,7 @@ From the survey:
 
 - Seriously, go was built so you could test your code easily
 - ... Super easily
-- `testing` package in the standard tool
+- `testing` package in the standard library
 - `go test` tool as part of the `go` command line
 - Benchmarks
 - Run tests in parallel
@@ -46,7 +62,7 @@ Example:
 
 .play handler/handler.go /^func main/,/^}/
 
-[[http://localhost:8080/go]]
+[[http://localhost:8080/Go]]
 [[http://localhost:8080/Stratoscale]]
 
 * Go + Testing + HTTP Servers > 3
@@ -104,24 +120,26 @@ HTTP handshake:
 
 * Test it?
 
-- Use `httptest.Recorder`?
+- Use `httptest.NewRecorder`?
 
     Not possible!
 
-- Why do we want something like `httptest.Recorder`?
+- Why do we want something like `httptest.NewRecorder`?
 
-* What can we do?
+.image ./img/thinking.png 300 300
+
+* Let's build it together!
 
 We want to achieve something of the form:
 
     d := NewTestDialer(http.HandlerFunc(echo.Handler))
     c, resp, err := d.Dial("ws://whatever/ws", nil)
 
-- Use the webscoket.Dialer.NetDial field:
+- Use the gorilla's `webscoket.Dialer.NetDial` field:
 
     NetDial: func(network, addr string) (net.Conn, error)
 
-- Use net.Pipe that returns two paired connections
+- Use `net.Pipe` that returns two paired connections:
 
     client, server := net.Pipe()
 
@@ -159,16 +177,10 @@ Let's write a net.Pipe that supports deadlines!
 
 My solution:
 
-- bytes.Buffer which is not blocking, returns EOF error on read when empty
-- sync.Cond for notifying on new content in pipe
-
-  on setDeadline ->
-    cancel running goroutine if exists
-    if 0 set error to nil
-    if in the past/present: set error and broadcast
-    if in future: run a goroutie that will set the error and broadcast in the requested deadline
-  on read + EOF -> wait on cond
-  on write -> Signal
+- `bytes.Buffer` which is not blocking, returns EOF error on read when empty
+- `sync.Cond` for notifying on new content in pipe
+- After write: signal.
+- After deadline: set error and broadcast.
 
 .link https://github.com/posener/wstest#examples Voilà
 
@@ -179,10 +191,9 @@ My solution:
 
 .image img/pizza-and-beer.png 320 320
 
-- Bash completion for the go command:
+Last thing: Bash completion for the go command:
 
     go get -u github.com/posener/complete/gocomplete && gocomplete -install
-
 
 * References
 
