@@ -1,10 +1,3 @@
 # meetup slides
 
-Run:
-
-```
-go get golang.org/x/tools/cmd/present
-present
-```
-
-Browse to [http://127.0.0.1:3999](http://127.0.0.1:3999)
+* [Websocket Testing](http://talks.godoc.org/github.com/posener/meetups/websocket-testing/wstest.slide)
