@@ -1,5 +1,7 @@
 # wstest meetup slides
 
+[View Online](http://talks.godoc.org/github.com/posener/meetups/websocket-testing/wstest.slide)
+
 Run:
 
 ```
