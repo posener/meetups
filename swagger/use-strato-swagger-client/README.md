@@ -1,0 +1,1 @@
+# Using Stratoscale/swagger Client Demo
