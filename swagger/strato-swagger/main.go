@@ -1,16 +1,19 @@
 package main
 
 import (
-	"net/http"
 	"log"
+	"net/http"
 
-	"github.com/posener/meetups/swagger/strato-swagger/restapi"
 	"github.com/posener/meetups/swagger/strato-swagger/internal"
+	"github.com/posener/meetups/swagger/strato-swagger/restapi"
 )
 
 func main() {
 	h, err := restapi.Handler(restapi.Config{
-		PetAPI: &internal.PetImplemented{},
+		// Injecting the PetAPI business logic implementer here.
+		// change to internal.PetImplemented in order to get the pet list working
+		PetAPI: &internal.Pet{},
+		//PetAPI: &internal.PetImplemented{},
 		Logger: log.Printf,
 	})
 	if err != nil {

@@ -49,6 +49,7 @@ func main() {
 		fmt.Printf("\t%d Kind=%v Name=%v\n", p.ID, p.Kind, *p.Name)
 	}
 }
+
 func catchSignal(cancel context.CancelFunc) {
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt)
