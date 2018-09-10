@@ -1,5 +1,7 @@
 # Meetups Archive
 
+Links for meetup talks I gave:
+
 ### HTTP2 Advantures in Go
 * [Slides](https://github.com/posener/meetups/blob/master/http2/slides.pdf)
 * [Code examples from the talk](https://github.com/posener/meetups/blob/master/http2/code)
